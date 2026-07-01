@@ -12,9 +12,8 @@
 //   Home-Screen → Widget "Scriptable" → dieses Skript wählen → ggf. Parameter setzen.
 // -----------------------------------------------------------------------------
 
-// >>> HIER anpassen: DEIN-GITHUB-USER und REPO eintragen (kleingeschrieben).
-// {profil} wird automatisch durch "max" bzw. "frau" ersetzt.
-const BRIEFING_URL = "https://DEIN-GITHUB-USER.github.io/newsapp/briefing-{profil}.json";
+// Gehostetes Briefing (GitHub Pages). {profil} wird automatisch durch "max"/"frau" ersetzt.
+const BRIEFING_URL = "https://maximilianbusch.github.io/newsapp/briefing-{profil}.json";
 
 const CATEGORY_LABEL = {
   politik: "Politik",
