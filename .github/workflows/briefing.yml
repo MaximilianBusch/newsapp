@@ -2,9 +2,10 @@ name: Briefing bauen & veröffentlichen
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # alle 30 Minuten (UTC). Hinweis: GitHub kann den Start
-                             # bei hoher Last etwas verzögern; das iOS-Widget entscheidet
-                             # zudem selbst, wann es die Daten neu lädt.
+    - cron: "5,35 * * * *"   # alle 30 Min bei :05 und :35 (UTC). Bewusst NICHT :00/:30 –
+                             # GitHub verzögert geplante Läufe zur vollen/halben Stunde am stärksten.
+                             # Hinweis: der Start kann sich dennoch etwas verzögern; das iOS-Widget
+                             # entscheidet zudem selbst, wann es die Daten neu lädt.
   workflow_dispatch: {}       # manuell auslösbar (Actions-Tab → "Run workflow")
   push:
     branches: [main]          # bei jedem Push sofort neu bauen/veröffentlichen
