@@ -1,0 +1,5 @@
+node_modules/
+briefing/
+.DS_Store
+.env
+*.log

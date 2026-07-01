@@ -1,0 +1,13 @@
+{
+  "name": "newsapp-briefing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "NewsApp – Briefing-Builder: kuratierte RSS-Feeds → kompaktes Briefing-JSON fürs Scriptable-Widget",
+  "scripts": {
+    "build": "node build_briefing.mjs"
+  },
+  "dependencies": {
+    "rss-parser": "^3.13.0"
+  }
+}

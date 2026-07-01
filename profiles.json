@@ -1,0 +1,15 @@
+{
+  "_hinweis": "Pro Profil: wie viele Artikel je Kategorie ins Briefing kommen und in welcher Reihenfolge die Kategorien im Widget stehen. 0 = Kategorie ausblenden. Basis bleibt Politik/Gesellschaft; Technik/KI/Basteln/Kreativ sind bewusst 'auch' dabei, nicht dominant. Kategorien: politik, gesellschaft, ki, technik, basteln (Maker/Tech-DIY), kreativ (Handmade: Naehen/Stricken/Deko).",
+  "profiles": {
+    "max": {
+      "label": "Max",
+      "order": ["politik", "gesellschaft", "ki", "technik", "basteln", "kreativ"],
+      "itemsPerCategory": { "politik": 3, "gesellschaft": 2, "ki": 2, "technik": 2, "basteln": 1, "kreativ": 0 }
+    },
+    "frau": {
+      "label": "Frau",
+      "order": ["politik", "gesellschaft", "kreativ", "ki", "technik", "basteln"],
+      "itemsPerCategory": { "politik": 4, "gesellschaft": 3, "kreativ": 3, "ki": 1, "technik": 1, "basteln": 0 }
+    }
+  }
+}

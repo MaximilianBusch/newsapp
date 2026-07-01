@@ -1,0 +1,62 @@
+name: Briefing bauen & veröffentlichen
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # alle 30 Minuten (UTC). Hinweis: GitHub kann den Start
+                             # bei hoher Last etwas verzögern; das iOS-Widget entscheidet
+                             # zudem selbst, wann es die Daten neu lädt.
+  workflow_dispatch: {}       # manuell auslösbar (Actions-Tab → "Run workflow")
+  push:
+    branches: [main]          # bei jedem Push sofort neu bauen/veröffentlichen
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Briefings bauen
+        run: node build_briefing.mjs
+
+      - name: Kleine Übersichtsseite ergänzen
+        run: |
+          touch briefing/.nojekyll
+          cat > briefing/index.html <<'EOF'
+          <!doctype html><html lang="de"><meta charset="utf-8">
+          <title>NewsApp Briefing</title>
+          <h1>NewsApp Briefing</h1>
+          <ul>
+            <li><a href="briefing-max.json">briefing-max.json</a></li>
+            <li><a href="briefing-frau.json">briefing-frau.json</a></li>
+            <li><a href="briefing.json">briefing.json (alle Kategorien)</a></li>
+          </ul>
+          </html>
+          EOF
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: briefing
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
