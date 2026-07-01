@@ -37,9 +37,23 @@ function timestamp(item) {
   return Number.isNaN(ms) ? 0 : ms;
 }
 
+const FEED_TIMEOUT_MS = 15000; // harter Abbruch pro Feed (auch bei hängender Verbindung)
+
 async function fetchFeed(category, feed) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FEED_TIMEOUT_MS);
   try {
-    const parsed = await parser.parseURL(feed.url);
+    const res = await fetch(feed.url, {
+      signal: controller.signal,
+      redirect: "follow",
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) NewsApp/0.1",
+        Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
+      },
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const xml = await res.text();
+    const parsed = await parser.parseString(xml);
     return (parsed.items || [])
       .map((it) => ({
         title: (it.title || "").trim(),
@@ -55,8 +69,11 @@ async function fetchFeed(category, feed) {
       }))
       .filter((x) => x.title && x.link);
   } catch (err) {
-    console.warn(`  ⚠︎  Feed fehlgeschlagen [${category}/${feed.name}]: ${err.message}`);
+    const reason = err.name === "AbortError" ? `Timeout (>${FEED_TIMEOUT_MS / 1000}s)` : err.message;
+    console.warn(`  ⚠︎  Feed fehlgeschlagen [${category}/${feed.name}]: ${reason}`);
     return [];
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -98,10 +115,18 @@ async function main() {
   const { categories } = JSON.parse(await readFile(here("./feeds.json"), "utf8"));
   const { profiles } = JSON.parse(await readFile(here("./profiles.json"), "utf8"));
 
-  // 1) Pro Kategorie einen deduplizierten, quellenvielfältigen Pool bauen
+  // 1) ALLE Feeds aller Kategorien parallel laden – ein langsamer Feed bremst den Rest nicht aus
+  const allFeeds = Object.entries(categories).flatMap(([category, feeds]) =>
+    feeds.map((feed) => ({ category, feed }))
+  );
+  const fetched = await Promise.all(allFeeds.map(({ category, feed }) => fetchFeed(category, feed)));
+  const byCategory = Object.fromEntries(Object.keys(categories).map((c) => [c, []]));
+  fetched.forEach((items, i) => byCategory[allFeeds[i].category].push(...items));
+
+  // 2) Pro Kategorie einen deduplizierten, quellenvielfältigen Pool bauen
   const pools = {};
   for (const [category, feeds] of Object.entries(categories)) {
-    const collected = (await Promise.all(feeds.map((f) => fetchFeed(category, f)))).flat();
+    const collected = byCategory[category];
 
     const seen = new Set();
     const unique = [];
@@ -123,12 +148,12 @@ async function main() {
   const generatedAt = new Date().toISOString();
   await mkdir(here("./briefing/"), { recursive: true });
 
-  // 2) Fallback-/Debug-Datei mit allen Kategorien
+  // 3) Fallback-/Debug-Datei mit allen Kategorien
   const combined = { generatedAt, version: "0.2", categories: {} };
   for (const [cat, pool] of Object.entries(pools)) combined.categories[cat] = pool.slice(0, 6);
   await writeFile(here("./briefing/briefing.json"), JSON.stringify(combined, null, 2) + "\n");
 
-  // 3) Pro Profil eine Datei
+  // 4) Pro Profil eine Datei
   console.log("");
   for (const [key, profile] of Object.entries(profiles)) {
     if (key.startsWith("_")) continue;
@@ -144,7 +169,9 @@ async function main() {
   console.log(`\n✅ Briefings geschrieben  (${new Date().toLocaleString("de-DE")})`);
 }
 
-main().catch((err) => {
-  console.error("Fehler:", err);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0)) // sauberes Ende, auch wenn HTTP-Sockets noch im Pool hängen
+  .catch((err) => {
+    console.error("Fehler:", err);
+    process.exit(1);
+  });
